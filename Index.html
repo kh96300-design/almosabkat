@@ -2382,3 +2382,17 @@
   </script>
 </body>
 </html>
+<script>
+window.addEventListener("error", (event) => {
+  console.error("JavaScript Error:", event.message, event.filename, event.lineno);
+  alert("حدث خطأ في التطبيق:\n" + event.message);
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  if (typeof renderAll === "function") {
+    renderAll();
+  } else {
+    console.error("renderAll غير معرفة");
+  }
+});
+</script>

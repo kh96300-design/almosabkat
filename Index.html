@@ -376,11 +376,17 @@
     .qfs-timer { color: #2dd4bf; }
   
     body { padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  
+    /* ملاءمة تلقائية للشاشة */
+    html.fit { font-size: 16px; }
+    html.fit body { overflow: hidden; height: 100vh; padding: 8px; }
+    html.fit #fitRoot { position: absolute; left: 50%; top: 0; transform-origin: 50% 0; }
   </style>
 </head>
 <body class="viewer-mode">
   <canvas id="confettiCanvas"></canvas>
 
+  <div id="fitRoot">
   <header class="topbar">
     <div class="topbar-actions">
       <strong id="screenTitleTag">لوحة المسابقة المباشرة</strong>
@@ -388,6 +394,7 @@
       <span id="deviceRoleTag" style="font-size:0.82rem; color:var(--text-muted);">جهاز مشاهدة</span>
     </div>
     <div class="topbar-actions">
+      <button id="fitBtn" class="btn-ghost" onclick="toggleFit()">⤢ ملاءمة الشاشة</button>
       <button id="followBtn" class="btn-ghost" onclick="toggleFollowContest()">➕ متابعة</button>
       <span style="font-size:0.85rem;">المتابعون: <strong id="followersCount">0</strong></span>
       <button id="undoBtn" class="btn-ghost admin-only" onclick="undoAction()" disabled>↩️ تراجع</button>
@@ -513,6 +520,7 @@
       </div>
     </aside>
   </main>
+  </div>
 
   <div id="qFullscreen" class="qfs">
     <div class="qfs-info">المختار: <strong id="qfsSelector"></strong></div>
@@ -2304,6 +2312,39 @@
     syncTimerWithState();
     renderAll();
   
+    // ===== ملاءمة تلقائية للشاشة =====
+    const FIT_W = 1280;
+    let fitOn = (function () {
+      try { const v = localStorage.getItem("contest_fit"); if (v !== null) return v === "1"; } catch (e) {}
+      return window.innerWidth >= 900;
+    })();
+    function fitScreen() {
+      const root = document.getElementById("fitRoot");
+      const btn = document.getElementById("fitBtn");
+      document.documentElement.classList.toggle("fit", fitOn);
+      if (btn) btn.textContent = fitOn ? "⤢ ملاءمة الشاشة: تلقائي" : "⤡ ملاءمة الشاشة: معطّل";
+      if (!root) return;
+      if (!fitOn) { root.style.width = ""; root.style.transform = ""; root.style.top = ""; return; }
+      root.style.width = FIT_W + "px";
+      root.style.transform = "none";
+      const h = root.offsetHeight;
+      const vw = window.innerWidth - 16;
+      const vh = window.innerHeight - 16;
+      const sc = Math.max(0.2, Math.min(vw / FIT_W, vh / h));
+      root.style.transform = `translateX(-50%) scale(${sc})`;
+      root.style.top = Math.max(0, (window.innerHeight - h * sc) / 2) + "px";
+    }
+    function toggleFit() {
+      fitOn = !fitOn;
+      try { localStorage.setItem("contest_fit", fitOn ? "1" : "0"); } catch (e) {}
+      fitScreen();
+    }
+    window.addEventListener("resize", fitScreen);
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => fitScreen()).observe(document.getElementById("fitRoot"));
+    }
+    fitScreen();
+
     // ===== الاستضافة على claude.ai: مزامنة حية وصلاحيات =====
     const hosted = { on: false, db: null, canEdit: false, sav: 0, pend: 0, first: true };
     function toast(msg) {

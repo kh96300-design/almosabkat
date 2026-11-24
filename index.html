@@ -718,6 +718,7 @@
         currentSelector: null,
         currentTarget: null,
         activeQuestion: null,
+        questionFullscreen: false,
         timeLeft: 30,
         timerRunning: false,
         answerRevealed: false
@@ -902,6 +903,7 @@
         currentSelector: safeSelector,
         currentTarget: safeTarget,
         activeQuestion,
+        questionFullscreen: Boolean(rawObj.questionFullscreen && activeQuestion),
         timeLeft: activeQuestion ? clampInt(rawObj.timeLeft, 0, timerSec, timerSec) : timerSec,
         timerRunning: Boolean(activeQuestion && rawObj.timerRunning),
         answerRevealed: Boolean(activeQuestion && rawObj.answerRevealed)
@@ -1530,6 +1532,8 @@
       }
       const q = pool[Math.floor(Math.random() * pool.length)];
       state.activeQuestion = { ...q };
+      // اختيار خصم جديد لا يفتح الشاشة المكبرة تلقائياً.
+      state.questionFullscreen = false;
       if (!state.usedQuestionIds.includes(q.id)) {
         state.usedQuestionIds.push(q.id);
       }
@@ -2201,8 +2205,21 @@
     function qfsKey() {
       return state.activeQuestion ? `${state.currentTarget}|${state.activeQuestion.id}|${state.activeQuestion.text}` : null;
     }
-    function closeQuestionFullscreen() { qfsOpenKey = null; renderQuestionFullscreen(); }
-    function openQuestionFullscreen() { qfsOpenKey = qfsKey(); renderQuestionFullscreen(); }
+    function closeQuestionFullscreen() {
+      qfsOpenKey = null;
+      if (state.questionFullscreen) {
+        state.questionFullscreen = false;
+        saveState("تصغير شاشة السؤال");
+      }
+      renderQuestionFullscreen();
+    }
+    function openQuestionFullscreen() {
+      if (!state.activeQuestion || state.contestClosed) return;
+      qfsOpenKey = qfsKey();
+      state.questionFullscreen = true;
+      saveState("تكبير شاشة السؤال");
+      renderQuestionFullscreen();
+    }
     function toggleBrowserFullscreen() {
       try {
         if (!document.fullscreenElement) {
@@ -2220,6 +2237,8 @@
       const el = document.getElementById("qFullscreen");
       if (!el) return;
       const key = qfsKey();
+      if (state.questionFullscreen && key) qfsOpenKey = key;
+      if (!state.questionFullscreen) qfsOpenKey = null;
       const show = Boolean(key && !state.contestClosed && key === qfsOpenKey);
       el.classList.toggle("open", show);
       if (!show) return;

@@ -2393,7 +2393,7 @@
     fitScreen();
 
     // ===== مزامنة حية عبر الرابط الأساسي وصلاحيات المدير =====
-    const hosted = { on: false, db: null, canEdit: false, sav: 0, pend: 0, first: true };
+    const hosted = { on: false, db: null, canEdit: false, sav: 0, pend: 0, first: true, ready: false };
     function toast(msg) {
       let t = document.getElementById("toastBox");
       if (!t) {
@@ -2409,12 +2409,15 @@
     }
     function pushRemote() {
       if (!hosted.db || (!isAdmin && !state.settings.allowPublicRegistration)) return;
+      // لا نكتب الحالة المحلية قبل وصول أول قراءة من قاعدة الرابط؛ حتى لا
+      // يستبدل جهاز جديد الحالة المشتركة بحالة قديمة محفوظة في متصفحه.
+      if (!hosted.ready) { hosted.pend = 1; return; }
       if (hosted.sav) { hosted.pend = 1; return; }
       hosted.sav = 1;
       const copy = JSON.parse(JSON.stringify(state));
       delete copy.settings.adminPassHash;
       hosted.db.doc("contest/state").set({ s: JSON.stringify(copy), r: state.revision })
-        .catch(() => {})
+        .catch((err) => { console.warn("تعذر حفظ الحالة المشتركة:", err); })
         .then(() => { hosted.sav = 0; if (hosted.pend) { hosted.pend = 0; pushRemote(); } });
     }
     async function hostedBoot() {
@@ -2446,11 +2449,27 @@
         let r = null;
         try { if (sn.exists) r = JSON.parse(sn.data().s); } catch (e) {}
         const remoteRevision = Number(r && r.revision);
-        if (r && Number.isFinite(remoteRevision) && remoteRevision < Number(state.revision || 0)) {
+        if (hosted.first) {
+          // عند بدء الاتصال تكون قاعدة الرابط هي المرجع، وليس localStorage.
+          // هذا يمنع الحالة القديمة في جهاز جديد من تعطيل المزامنة.
+          if (r && Number.isFinite(remoteRevision)) {
+            r.settings = r.settings || {};
+            r.settings.adminPassHash = state.settings.adminPassHash;
+            state = sanitizeState(r);
+            hosted.pend = 0;
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+            syncTimerWithState();
+            renderAll();
+          } else if (hosted.canEdit || state.settings.allowPublicRegistration) {
+            hosted.ready = true;
+            pushRemote();
+          }
+          hosted.ready = true;
           hosted.first = false;
           return;
         }
-        if (r && (!isAdmin || hosted.first)) {
+        // كل جهاز، بما فيه جهاز المدير، يستقبل التحديث الأحدث من الرابط.
+        if (r && Number.isFinite(remoteRevision) && remoteRevision > Number(state.revision || 0)) {
           r.settings = r.settings || {};
           r.settings.adminPassHash = state.settings.adminPassHash;
           state = sanitizeState(r);
@@ -2458,7 +2477,6 @@
           syncTimerWithState();
           renderAll();
         }
-        hosted.first = false;
       }, () => {});
     }
     hostedBoot();

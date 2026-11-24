@@ -326,17 +326,17 @@
       75% { transform: translateX(6px); }
     }
 
-    .qfs{display:none;position:fixed;inset:0;z-index:60;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,22px);padding:24px;text-align:center;overflow-y:auto}
+    .qfs{display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:60;background:var(--bg);flex-direction:column;align-items:center;justify-content:space-evenly;gap:clamp(2px,.6vh,8px);padding:clamp(6px,1vh,14px) clamp(10px,1.6vw,22px);box-sizing:border-box;text-align:center;overflow:hidden;font-family:"Noto Naskh Arabic","Traditional Arabic","Amiri",serif;font-weight:400}
     .qfs.open{display:flex}
-    .qfs-info{color:var(--text-muted);font-size:clamp(.9rem,2vw,1.3rem)}
-    .qfs-target{font-size:clamp(1.3rem,4vw,2.6rem);font-weight:800;color:var(--cyan)}
-    .qfs-timer{font-size:clamp(3rem,13vw,9rem);font-weight:800;line-height:1}
+    .qfs-info{color:var(--text-muted);font-size:clamp(.85rem,min(1.5vw,2.1vh),1.05rem);line-height:1.15;max-width:94vw;overflow-wrap:anywhere}
+    .qfs-target{font-size:clamp(1rem,min(2.6vw,3.8vh),1.85rem);font-weight:400;line-height:1.15;color:var(--cyan);max-width:94vw;max-height:8vh;overflow:hidden;overflow-wrap:anywhere}
+    .qfs-timer{font-size:clamp(2.4rem,min(7vw,10vh),4.5rem);font-weight:700;line-height:.9}
     .qfs-timer.urgent{color:var(--danger)}
-    .qfs-q{font-size:clamp(1.8rem,5.2vw,4.2rem);font-weight:800;line-height:1.35;max-width:1300px}
-    .qfs-answer{display:none;font-size:clamp(1.4rem,4vw,3rem);font-weight:800;color:var(--success);background:rgba(16,185,129,.14);border:2px solid var(--success);border-radius:14px;padding:10px 28px}
+    .qfs-q{font-size:clamp(1.1rem,min(3vw,4.5vh),2.2rem);font-weight:400;line-height:1.2;width:min(94vw,1200px);max-height:27vh;overflow:hidden;overflow-wrap:anywhere}
+    .qfs-answer{display:none;font-size:clamp(1rem,min(2.5vw,3.8vh),1.8rem);font-weight:400;line-height:1.15;color:var(--success);background:rgba(16,185,129,.14);border:2px solid var(--success);border-radius:12px;padding:4px 14px;max-width:94vw;max-height:12vh;overflow:hidden;overflow-wrap:anywhere}
     .qfs-answer.visible{display:block}
-    .qfs-controls{justify-content:center}
-    .qfs-controls button{font-size:clamp(1rem,2vw,1.4rem);padding:12px 22px}
+    .qfs-controls{justify-content:center;max-width:96vw;max-height:16vh;overflow:visible;flex-wrap:wrap;gap:6px}
+    .qfs-controls button{font-family:inherit;font-size:clamp(.72rem,min(1.35vw,1.9vh),1rem);font-weight:400;line-height:1.15;padding:5px 10px;white-space:nowrap}
     #confettiCanvas {
       position: fixed;
       inset: 0;
@@ -358,9 +358,9 @@
     /* المختار والخصم: خط أكبر ولون أخضر */
     .stage-meta { font-size: 1.3rem; color: var(--success); font-weight: 600; }
     .stage-meta strong { font-size: 1.8rem; font-weight: 800; color: var(--success); }
-    .qfs-info { font-size: clamp(1.3rem, 3.2vw, 2.4rem); color: var(--success); font-weight: 600; }
-    .qfs-info strong { font-weight: 800; color: var(--success); }
-    .qfs-target { color: var(--success); font-size: clamp(1.6rem, 4.6vw, 3.2rem); }
+    .qfs-info { font-size: clamp(.85rem, 1.5vw, 1.05rem); color: var(--success); font-weight: 400; }
+    .qfs-info strong { font-weight: 400; color: var(--success); }
+    .qfs-target { color: var(--success); font-size: clamp(1rem, 2.6vw, 1.85rem); font-weight: 400; }
   
     /* ألوان الأسماء: لونان متبادلان */
     .players-grid .player-tile:nth-child(odd) { box-shadow: inset 0 3px 0 #fbbf24; }
@@ -2196,12 +2196,13 @@
     }
 
 
-    let qfsDismissedKey = null;
+    // شاشة السؤال المكبرة لا تفتح تلقائياً عند اختيار الخصم؛ تفتح يدوياً فقط.
+    let qfsOpenKey = null;
     function qfsKey() {
       return state.activeQuestion ? `${state.currentTarget}|${state.activeQuestion.id}|${state.activeQuestion.text}` : null;
     }
-    function closeQuestionFullscreen() { qfsDismissedKey = qfsKey(); renderQuestionFullscreen(); }
-    function openQuestionFullscreen() { qfsDismissedKey = null; renderQuestionFullscreen(); }
+    function closeQuestionFullscreen() { qfsOpenKey = null; renderQuestionFullscreen(); }
+    function openQuestionFullscreen() { qfsOpenKey = qfsKey(); renderQuestionFullscreen(); }
     function toggleBrowserFullscreen() {
       try {
         if (!document.fullscreenElement) {
@@ -2219,7 +2220,7 @@
       const el = document.getElementById("qFullscreen");
       if (!el) return;
       const key = qfsKey();
-      const show = Boolean(key && !state.contestClosed && key !== qfsDismissedKey);
+      const show = Boolean(key && !state.contestClosed && key === qfsOpenKey);
       el.classList.toggle("open", show);
       if (!show) return;
       const set = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
@@ -2302,7 +2303,7 @@
       state.timeLeft = state.settings.timerSec;
       timerEndPerf = null;
       timerRemainingAtPause = null;
-      qfsDismissedKey = null;
+      qfsOpenKey = null;
       state.logs = [];
       addLog("تم تحديث البرنامج وبدء مسابقة جديدة.");
       saveState("تحديث البرنامج وبدء مسابقة جديدة");
@@ -2335,7 +2336,7 @@
       state.timeLeft = state.settings.timerSec;
       timerEndPerf = null;
       timerRemainingAtPause = null;
-      qfsDismissedKey = null;
+      qfsOpenKey = null;
       state.logs = [];
       addLog("تم تصفير الاختيارات والمتسابقين وبدء مسابقة جديدة.");
       saveState("تصفير المسابقة");

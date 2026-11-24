@@ -88,12 +88,13 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: 1.4fr 1fr;
       gap: 16px;
     }
 
-    @media (max-width: 900px) { html:not(.fit) .layout { grid-template-columns: 1fr; } }
-    html.fit #fitRoot.single .layout { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
 
     .panel {
       background: var(--card);
@@ -126,7 +127,7 @@
 
     .players-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -230,20 +231,13 @@
     .stat-lbl { font-size: 0.75rem; color: var(--text-muted); }
 
     .winners-board {
-      display: flex;
-      flex-wrap: nowrap;
+      display: grid;
       gap: 8px;
-      overflow-x: auto;
     }
 
     .winner-slot {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      flex: 1 1 0;
-      min-width: 150px;
-      white-space: nowrap;
-      overflow: hidden;
       padding: 8px 12px;
       border-radius: 8px;
       background: var(--card-2);
@@ -251,15 +245,6 @@
     }
 
     .winner-slot.filled { border-color: var(--warning); }
-    .winner-slot.filled .winner-name { color: #fde68a; font-weight: 800; }
-    .winner-slot.filled::before { content: "فائز"; color: var(--warning); font-size: 0.78rem; margin-left: 8px; }
-
-    .player-tile.just-registered { animation: registeredPulse 0.9s ease; }
-    @keyframes registeredPulse {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      55% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.12); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
 
     .logs-box {
       max-height: 200px;
@@ -273,6 +258,17 @@
 
     .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
 
+    .screens-list { display: grid; gap: 8px; margin-top: 8px; }
+    .screen-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .screen-status.online { color: var(--success); font-size: 0.8rem; }
 
     .modal {
       display: none;
@@ -349,7 +345,7 @@
     button, input, select { padding: 0.45em 0.85em; }
     .panel { padding: 1.1em; }
     .player-tile { padding: 0.6em; }
-    .player-name { font-family: "Noto Naskh Arabic", "Traditional Arabic", "Amiri", serif; font-size: 30px; font-weight: 400; line-height: 1.4; min-height: 1.4em; display: block; white-space: normal; overflow: visible; overflow-wrap: anywhere; word-break: break-word; }
+    .player-name { font-size: 1.15em; }
     .stage-box { padding: 1.1em; }
     .question-text { font-size: clamp(1.5rem, 2.3vw, 3rem); line-height: 1.4; }
     .timer-num { font-size: clamp(2rem, 3.6vw, 4.5rem); min-width: 2.2em; }
@@ -384,7 +380,6 @@
     /* ملاءمة تلقائية للشاشة */
     html.fit { font-size: 16px; }
     html.fit body { overflow: hidden; height: 100vh; padding: 8px; }
-    html.fit.fit-scroll body { overflow: visible; }
     html.fit #fitRoot { position: absolute; left: 50%; top: 0; transform-origin: 50% 0; }
   </style>
 </head>
@@ -400,26 +395,13 @@
     </div>
     <div class="topbar-actions">
       <button id="fitBtn" class="btn-ghost" onclick="toggleFit()">⤢ ملاءمة الشاشة</button>
-      <button id="followBtn" class="btn-ghost" onclick="toggleFollowContest()">➕ متابعة (محلية)</button>
+      <button id="followBtn" class="btn-ghost" onclick="toggleFollowContest()">➕ متابعة</button>
       <span style="font-size:0.85rem;">المتابعون: <strong id="followersCount">0</strong></span>
       <button id="undoBtn" class="btn-ghost admin-only" onclick="undoAction()" disabled>↩️ تراجع</button>
       <button class="btn-ghost admin-only" onclick="openSettings()">⚙️ الإعدادات</button>
-      <button id="refreshBtn" class="btn-ghost admin-only" onclick="refreshProgram()">🔄 تحديث البرنامج</button>
-      <button id="resetBtn" class="btn-danger admin-only" onclick="resetContest()">♻️ تصفير</button>
       <button id="toggleRoleBtn" class="btn-warning" onclick="handleRoleButton()">🔑 دخول المدير</button>
     </div>
   </header>
-
-  <div class="panel">
-    <div class="panel-title">الإحصائيات والفائزون</div>
-    <div class="stats-grid">
-      <div class="stat-card"><div id="statTotalPlayers" class="stat-val">0</div><div class="stat-lbl">الإجمالي</div></div>
-      <div class="stat-card"><div id="statAvailablePlayers" class="stat-val">0</div><div class="stat-lbl">متاح</div></div>
-      <div class="stat-card"><div id="statEliminatedPlayers" class="stat-val">0</div><div class="stat-lbl">مستبعد</div></div>
-      <div class="stat-card"><div id="statWinnersCount" class="stat-val">0/3</div><div class="stat-lbl">الفائزون</div></div>
-    </div>
-    <div id="winnersBoard" class="winners-board"></div>
-  </div>
 
   <div class="top-stage">
       <div class="panel">
@@ -442,8 +424,8 @@
 
         <div class="stage-box">
           <div class="stage-meta">
-            <span>المتسابق الحالي: <strong id="currentSelectorLabel">غير محدد</strong></span>
-            <span>الخصم الحالي: <strong id="currentTargetLabel">بانتظار الاختيار</strong></span>
+            <span>المختار: <strong id="currentSelectorLabel">غير محدد</strong></span>
+            <span>الخصم: <strong id="currentTargetLabel">بانتظار الاختيار</strong></span>
           </div>
 
           <div class="timer-row">
@@ -461,7 +443,7 @@
           <button class="btn-success" onclick="handleAnswer(true)">✅ إجابة صحيحة</button>
           <button class="btn-danger" onclick="handleAnswer(false)">❌ إجابة خاطئة</button>
           <button class="btn-warning" onclick="handlePass()">↷ اعتذار / تمرير</button>
-          <button class="btn-ghost" onclick="broadcastFullState('يدوي')">🔄 مزامنة الحالة</button>
+          <button class="btn-ghost" onclick="broadcastFullState('يدوي')">🔄 مزامنة الشاشات</button>
         </div>
       </div>
     </div>
@@ -478,18 +460,13 @@
           </div>
         </div>
 
-        <div id="publicRegisterRow" class="controls-row" style="display:none;">
-          <input type="text" id="publicPlayerNameInput" placeholder="اكتب اسمك للتسجيل..." maxlength="80" />
-          <button class="btn-primary" onclick="registerPlayer(true)">تسجيل متسابق</button>
-        </div>
-        <div id="publicRegisterNotice" style="display:none;font-size:0.86rem;color:var(--text-muted);margin-top:6px;">التسجيل غير متاح حاليًا، يرجى انتظار تفعيله من المدير.</div>
-
         <div class="controls-row admin-only">
           <label style="font-size:0.82rem; display:flex; align-items:center; gap:4px;">
             <input type="checkbox" id="replaceNamesCheck" /> استبدال الكل عند الاستيراد
           </label>
           <input type="file" id="namesFileInput" accept=".txt,.csv" onchange="importNamesFromFile(event)" />
           <button class="btn-ghost" onclick="exportBackupJson()">⬇️ تصدير نسخة</button>
+          <input type="file" id="backupFileInput" accept=".json" onchange="importBackupFromFile(event)" />
         </div>
 
         <div id="playersGrid" class="players-grid"></div>
@@ -511,6 +488,37 @@
       </div>
     </section>
 
+    <aside>
+      
+
+      <div class="panel hide-viewer">
+        <div class="panel-title">الإحصائيات والفائزون</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div id="statTotalPlayers" class="stat-val">0</div><div class="stat-lbl">الإجمالي</div></div>
+          <div class="stat-card"><div id="statAvailablePlayers" class="stat-val">0</div><div class="stat-lbl">متاح</div></div>
+          <div class="stat-card"><div id="statEliminatedPlayers" class="stat-val">0</div><div class="stat-lbl">مستبعد</div></div>
+          <div class="stat-card"><div id="statWinnersCount" class="stat-val">0/3</div><div class="stat-lbl">الفائزون</div></div>
+        </div>
+        <div id="winnersBoard" class="winners-board"></div>
+      </div>
+
+      <div class="panel admin-only">
+        <div class="panel-title">
+          <span>الشاشات المنفصلة</span>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="number" id="orderedScreensInput" value="2" min="1" max="12" style="width:65px;" />
+            <button class="btn-ghost" onclick="updateOrderedScreensCount()">تحديث</button>
+            <button class="btn-cyan" onclick="openAllOrderedScreens()">فتح الكل</button>
+          </div>
+        </div>
+        <div id="orderedScreensList" class="screens-list"></div>
+      </div>
+
+      <div class="panel hide-viewer">
+        <div class="panel-title">سجل الأحداث</div>
+        <div id="logsContainer" class="logs-box"></div>
+      </div>
+    </aside>
   </main>
   </div>
 
@@ -560,10 +568,7 @@
         <div class="form-field"><label>الحد الأقصى للأخطاء</label><input type="number" id="cfgMaxErrors" min="1" max="20" /></div>
         <div class="form-field"><label>الحد الأقصى للاعتذار</label><input type="number" id="cfgMaxPasses" min="0" max="20" /></div>
         <div class="form-field"><label>مدة المؤقت (ثانية)</label><input type="number" id="cfgTimerSec" min="5" max="600" /></div>
-        <label class="form-field" style="justify-content:center;">
-          <span>تسجيل الجمهور</span>
-          <span style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cfgAllowPublicRegistration" /> السماح للجمهور بتسجيل أسمائهم</span>
-        </label>
+        <div class="form-field"><label>عدد الشاشات المرتبة</label><input type="number" id="cfgOrderedScreens" min="1" max="12" /></div>
         <div class="form-field"><label>رابط المزامنة السحابية</label><input type="text" id="cfgCloudSyncUrl" placeholder="https://..." /></div>
       </div>
 
@@ -585,6 +590,19 @@
         </select>
       </div>
 
+      <div class="settings-grid">
+        <div class="form-field"><label>نص السؤال الجديد</label><input type="text" id="newQText" /></div>
+        <div class="form-field"><label>الإجابة الصحيحة</label><input type="text" id="newQAnswer" /></div>
+        <div class="form-field">
+          <label>المستوى</label>
+          <select id="newQLevel">
+            <option value="easy">سهل</option>
+            <option value="medium">متوسط</option>
+            <option value="hard">صعب</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="addQuestionToArchive()" style="margin-bottom:12px;">➕ إضافة سؤال للأرشيف</button>
       <div style="background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;">
         <div style="font-weight:700;margin-bottom:6px;">استيراد أسئلة إلى الأرشيف</div>
         <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">سطر لكل سؤال بالصيغة: السؤال | الإجابة | المستوى (المستوى اختياري: سهل أو متوسط أو صعب). يُقبل أيضًا ملف CSV بنفس ترتيب الأعمدة.</p>
@@ -606,11 +624,20 @@
   </div>
 
   <script>
-    // يبدأ الأرشيف فارغاً؛ يمكن للمدير إضافة أسئلة جديدة من الإعدادات.
-    const DEFAULT_QUESTIONS = [];
+    const DEFAULT_QUESTIONS = [
+      { id: 1, text: "ما هي عاصمة سلطنة عُمان؟", answer: "مسقط", level: "easy" },
+      { id: 2, text: "ما هو أطول نهر في العالم؟", answer: "نهر النيل", level: "easy" },
+      { id: 3, text: "كم عدد كواكب المجموعة الشمسية؟", answer: "8 كواكب", level: "easy" },
+      { id: 4, text: "ما هو العنصر الكيميائي الذي رمزه Au؟", answer: "الذهب", level: "medium" },
+      { id: 5, text: "في أي قارة تقع جمهورية البرازيل؟", answer: "أمريكا الجنوبية", level: "easy" },
+      { id: 6, text: "ما هو أسرع حيوان بري؟", answer: "الفهد (الشيتا)", level: "easy" },
+      { id: 7, text: "من هو مؤلف كتاب المقدمة؟", answer: "ابن خلدون", level: "medium" },
+      { id: 8, text: "ما هي أكبر محيطات العالم مساحة؟", answer: "المحيط الهادئ", level: "medium" },
+      { id: 9, text: "كم عدد سور القرآن الكريم؟", answer: "114 سورة", level: "easy" },
+      { id: 10, text: "ما هو الغاز الأكثر وفرة في الغلاف الجوي للأرض؟", answer: "النيتروجين", level: "hard" }
+    ];
 
     const STORAGE_KEY = "contest_pro_sync_v2";
-    const ARCHIVE_CLEAR_MIGRATION_KEY = "contest_archive_cleared_v1";
     const LOCAL_AUDIENCE_KEY = "contest_pro_local_audience_v2";
     const CHANNEL_NAME = "contest_pro_sync_channel_v2";
     const channel = ("BroadcastChannel" in window) ? new BroadcastChannel(CHANNEL_NAME) : null;
@@ -626,7 +653,6 @@
     let timerRemainingAtPause = null;
     let sheetsSyncTimer = null;
     let isAdmin = false;
-    let recentlyRegisteredPlayer = null;
 
     async function sha256Hex(text) {
       if (window.crypto && window.crypto.subtle) {
@@ -699,7 +725,6 @@
           timerSec: 30,
           orderedScreens: 2,
           adminPassHash: DEFAULT_ADMIN_PASS_HASH,
-          allowPublicRegistration: false,
           cloudSyncUrl: ""
         },
         sheetsConfig: {
@@ -739,7 +764,6 @@
       const maxPasses = clampInt(rawSettings.maxPasses, 0, 20, base.settings.maxPasses);
       const timerSec = clampInt(rawSettings.timerSec, 5, 600, base.settings.timerSec);
       const orderedScreens = clampInt(rawSettings.orderedScreens, 1, 12, base.settings.orderedScreens);
-      const allowPublicRegistration = Boolean(rawSettings.allowPublicRegistration);
 
       const adminPassHash =
         typeof rawSettings.adminPassHash === "string" && rawSettings.adminPassHash.trim()
@@ -883,7 +907,6 @@
           timerSec,
           orderedScreens,
           adminPassHash,
-          allowPublicRegistration,
           cloudSyncUrl
         },
         sheetsConfig: {
@@ -1127,14 +1150,6 @@
         }
         if (devTag) devTag.textContent = "جهاز مشاهدة";
       }
-      const publicRegisterRow = document.getElementById("publicRegisterRow");
-      if (publicRegisterRow) {
-        publicRegisterRow.style.display = !isAdmin && state.settings.allowPublicRegistration ? "flex" : "none";
-      }
-      const publicRegisterNotice = document.getElementById("publicRegisterNotice");
-      if (publicRegisterNotice) {
-        publicRegisterNotice.style.display = !isAdmin && !state.settings.allowPublicRegistration ? "block" : "none";
-      }
       updateUndoButton();
     }
 
@@ -1150,9 +1165,9 @@
       renderStatsAndAudience();
     }
 
-    function registerPlayer(publicRequest = false) {
-      if (!isAdmin && (!publicRequest || !state.settings.allowPublicRegistration)) return;
-      const input = document.getElementById(publicRequest ? "publicPlayerNameInput" : "playerNameInput");
+    function registerPlayer() {
+      if (!isAdmin) return;
+      const input = document.getElementById("playerNameInput");
       const name = input ? input.value.trim().replace(/\s+/g, " ") : "";
       if (!name) return;
 
@@ -1177,14 +1192,9 @@
       }
       emptySlot.name = name;
       if (input) input.value = "";
-      recentlyRegisteredPlayer = emptySlot.number;
-      addLog(`${publicRequest ? "تم التسجيل من واجهة الجمهور" : "تم تسجيل المتسابق"} رقم (${emptySlot.number}): ${name}`);
+      addLog(`تم تسجيل المتسابق رقم (${emptySlot.number}): ${name}`);
       saveState("تسجيل متسابق");
       renderAll();
-      if (publicRequest) {
-        toast(`تم تسجيل اسمك بنجاح في الخانة رقم ${emptySlot.number}.`);
-      }
-      setTimeout(() => { recentlyRegisteredPlayer = null; }, 1100);
     }
 
     function removeLastPlayer() {
@@ -1510,13 +1520,6 @@
 
     function assignQuestionForTarget(targetNum) {
       if (state.contestClosed) return;
-      if (!state.questions.length) {
-        alert("لا توجد أسئلة في الأرشيف. أضف سؤالاً واحداً على الأقل من الإعدادات أولاً.");
-        state.currentTarget = null;
-        saveState("لا توجد أسئلة في الأرشيف");
-        renderAll();
-        return;
-      }
       const levelEl = document.getElementById("levelSelector");
       const levelFilter = levelEl ? levelEl.value : "all";
       let pool = state.questions.filter(q => !state.usedQuestionIds.includes(q.id));
@@ -1644,7 +1647,7 @@
           name: player.name || `لاعب #${player.number}`,
           kills: player.kills
         });
-        addLog(`🏆 فوز المتسابق رقم (${player.number}) ${player.name || ""}!`);
+        addLog(`🏆 فوز المتسابق رقم (${player.number}) ${player.name || ""} بالمركز #${state.winners.length}!`);
         launchConfetti();
 
         if (state.winners.length >= state.settings.maxWinners) {
@@ -1715,28 +1718,6 @@
         timerInterval = null;
       }
     }
-
-    // حفظ الزمن الحالي عند تحديث الصفحة أو إخفائها حتى لا يعود السؤال
-    // إلى مدته الأصلية بعد إعادة فتح الشاشة.
-    function persistTimerSnapshot() {
-      if (!state.activeQuestion || !state.timerRunning || !timerEndPerf) return;
-      state.timeLeft = Math.max(0, Math.ceil((timerEndPerf - performance.now()) / 1000));
-      if (state.timeLeft <= 0) {
-        state.timeLeft = 0;
-        state.timerRunning = false;
-        timerEndPerf = null;
-      }
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeState(state)));
-      } catch (err) {
-        console.warn("تعذر حفظ لقطة المؤقت:", err);
-      }
-    }
-
-    window.addEventListener("pagehide", persistTimerSnapshot);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") persistTimerSnapshot();
-    });
 
     function toggleTimer() {
       if (!isAdmin || !state.activeQuestion || state.contestClosed) return;
@@ -1816,6 +1797,62 @@
       draw();
     }
 
+    function openDisplayWindow(screenNum = 1) {
+      const safeNum = clampInt(screenNum, 1, 12, 1);
+      const url = `${window.location.href.split("#")[0]}#screen=${safeNum}`;
+      window.open(url, `contest_screen_${safeNum}`, "noopener,noreferrer");
+    }
+
+    function updateOrderedScreensCount() {
+      if (!isAdmin) return;
+      const input = document.getElementById("orderedScreensInput");
+      const val = clampInt(input ? input.value : state.settings.orderedScreens, 1, 12, 1);
+      pushHistory();
+      state.settings.orderedScreens = val;
+      saveState("تحديث عدد الشاشات المرتبة");
+      renderOrderedScreens();
+    }
+
+    function openAllOrderedScreens() {
+      for (let i = 1; i <= state.settings.orderedScreens; i++) {
+        openDisplayWindow(i);
+      }
+    }
+
+    function renderOrderedScreens() {
+      const container = document.getElementById("orderedScreensList");
+      const input = document.getElementById("orderedScreensInput");
+      if (!container) return;
+      if (input) input.value = String(state.settings.orderedScreens);
+      container.textContent = "";
+
+      for (let i = 1; i <= state.settings.orderedScreens; i++) {
+        const div = document.createElement("div");
+        div.className = "screen-card";
+
+        const infoWrap = document.createElement("div");
+        const titleEl = document.createElement("strong");
+        titleEl.textContent = `شاشة عرض #${i}`;
+        const statusSpan = document.createElement("span");
+        statusSpan.className = "screen-status online";
+        statusSpan.style.marginRight = "6px";
+        statusSpan.textContent = "● جاهزة";
+        infoWrap.appendChild(titleEl);
+        infoWrap.appendChild(statusSpan);
+
+        const openBtn = document.createElement("button");
+        openBtn.className = "btn-cyan";
+        openBtn.style.padding = "5px 10px";
+        openBtn.style.fontSize = "0.78rem";
+        openBtn.textContent = "فتح";
+        openBtn.addEventListener("click", () => openDisplayWindow(i));
+
+        div.appendChild(infoWrap);
+        div.appendChild(openBtn);
+        container.appendChild(div);
+      }
+    }
+
     function setFieldValue(id, value) {
       const el = document.getElementById(id);
       if (el) el.value = String(value);
@@ -1830,8 +1867,7 @@
       setFieldValue("cfgMaxErrors", state.settings.maxErrors);
       setFieldValue("cfgMaxPasses", state.settings.maxPasses);
       setFieldValue("cfgTimerSec", state.settings.timerSec);
-      const publicRegistrationCheck = document.getElementById("cfgAllowPublicRegistration");
-      if (publicRegistrationCheck) publicRegistrationCheck.checked = Boolean(state.settings.allowPublicRegistration);
+      setFieldValue("cfgOrderedScreens", state.settings.orderedScreens);
       setFieldValue("cfgCloudSyncUrl", state.settings.cloudSyncUrl || "");
       renderArchiveList();
       const modal = document.getElementById("settingsModal");
@@ -1869,7 +1905,7 @@
       state.settings.maxErrors = clampInt(document.getElementById("cfgMaxErrors")?.value, 1, 20, state.settings.maxErrors);
       state.settings.maxPasses = clampInt(document.getElementById("cfgMaxPasses")?.value, 0, 20, state.settings.maxPasses);
       state.settings.timerSec = clampInt(document.getElementById("cfgTimerSec")?.value, 5, 600, state.settings.timerSec);
-      state.settings.allowPublicRegistration = Boolean(document.getElementById("cfgAllowPublicRegistration")?.checked);
+      state.settings.orderedScreens = clampInt(document.getElementById("cfgOrderedScreens")?.value, 1, 12, state.settings.orderedScreens);
 
       const cloudInputVal = (document.getElementById("cfgCloudSyncUrl")?.value || "").trim();
       if (!cloudInputVal) {
@@ -2071,7 +2107,7 @@
       const followBtn = document.getElementById("followBtn");
       if (followersEl) followersEl.textContent = String(localAudienceState.localFollowers);
       if (followBtn) {
-        followBtn.textContent = localAudienceState.isFollowing ? "✓ متابَع (محلي)" : "➕ متابعة (محلية)";
+        followBtn.textContent = localAudienceState.isFollowing ? "✓ متابَع (محلي)" : "➕ متابعة";
       }
 
       const totalEl = document.getElementById("statTotalPlayers");
@@ -2102,12 +2138,12 @@
     function renderPlayersGrid() {
       const grid = document.getElementById("playersGrid");
       if (!grid) return;
+      grid.style.gridTemplateColumns = `repeat(${state.settings.cols}, minmax(0, 1fr))`;
       grid.textContent = "";
 
       state.players.forEach(p => {
         const tile = document.createElement("div");
         tile.className = `player-tile status-${p.status}`;
-        if (recentlyRegisteredPlayer === p.number) tile.classList.add("just-registered");
         if (state.currentSelector === p.number) tile.classList.add("is-selector");
         if (state.currentTarget === p.number) tile.classList.add("is-target");
 
@@ -2117,10 +2153,15 @@
 
         const nameEl = document.createElement("div");
         nameEl.className = "player-name";
-        nameEl.textContent = p.name || "خانة متاحة";
+        nameEl.textContent = p.name || `لاعب #${p.number}`;
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "player-meta";
+        metaEl.textContent = `✓${p.kills} | ✕${p.errors} | ↷${p.passes}`;
 
         tile.appendChild(numEl);
         tile.appendChild(nameEl);
+        tile.appendChild(metaEl);
 
         if (isAdmin && p.status === "available" && !state.contestClosed) {
           tile.style.cursor = "pointer";
@@ -2186,15 +2227,28 @@
         const card = document.createElement("div");
         card.className = `winner-slot ${w ? "filled" : ""}`;
 
+        const rank = document.createElement("span");
+        rank.className = "winner-rank";
+        rank.textContent = `المركز #${i + 1}`;
+
         const label = document.createElement("span");
         label.className = "winner-name";
-        label.textContent = w ? `${w.name} — ${w.kills} إسقاطات` : "بانتظار الفائز";
+        label.textContent = w ? `${w.name} (#${w.number}) — ${w.kills} إسقاطات` : "شاغر";
 
+        card.appendChild(rank);
         card.appendChild(label);
         board.appendChild(card);
       }
     }
 
+    function applyScreenHashLabel() {
+      const match = window.location.hash.match(/screen=(\d+)/i);
+      const tag = document.getElementById("screenTitleTag");
+      if (match && tag) {
+        const num = clampInt(match[1], 1, 12, 1);
+        tag.textContent = `شاشة عرض المسابقة #${num}`;
+      }
+    }
 
     let qfsDismissedKey = null;
     function qfsKey() {
@@ -2243,142 +2297,42 @@
 
     function renderAll() {
       renderQuestionFullscreen();
+      applyScreenHashLabel();
       updateRoleUI();
       renderStatsAndAudience();
       renderPlayersGrid();
       renderStage();
       renderWinnersBoard();
+      renderOrderedScreens();
     }
 
-    // مسح الأرشيف القديم الموجود في التخزين المحلي مرة واحدة فقط.
-    // بعد ذلك تبقى الأسئلة التي يضيفها المدير محفوظة بشكل طبيعي.
-    function clearLegacyQuestionArchive() {
-      try {
-        if (localStorage.getItem(ARCHIVE_CLEAR_MIGRATION_KEY) === "1") return;
-        state.questions = [];
-        state.usedQuestionIds = [];
-        state.activeQuestion = null;
-        state.currentTarget = null;
-        state.answerRevealed = false;
-        state.timerRunning = false;
-        state.timeLeft = state.settings.timerSec;
-        state = sanitizeState(state);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        localStorage.setItem(ARCHIVE_CLEAR_MIGRATION_KEY, "1");
-      } catch (err) {
-        console.warn("تعذر مسح أرشيف الأسئلة القديم:", err);
-      }
+    if (!isAdmin) {
+      document.body.classList.add("viewer-mode");
     }
-
-    // يبدأ التطبيق دائمًا بواجهة الجمهور، ولا تظهر أدوات المدير إلا بعد تسجيل الدخول.
-    isAdmin = false;
-    document.body.classList.add("viewer-mode");
-    clearLegacyQuestionArchive();
     syncTimerWithState();
     renderAll();
   
-    // ===== تحديث البرنامج وتصفير المسابقة =====
-    function refreshProgram() {
-      if (!isAdmin) return;
-      // التحديث هنا يبدأ مسابقة جديدة داخل الصفحة نفسها، ولا يعيد تحميلها؛
-      // لذلك يبقى المدير مسجلاً ولا يعود إلى صفحة الجمهور، مع إبقاء الأسماء.
-      stopTimer();
-      historyStack = [];
-      state.players.forEach(p => {
-        // لا نحذف اسم المتسابق عند التحديث؛ نبدأ جولة جديدة بنفس القائمة.
-        p.status = "available";
-        p.kills = 0;
-        p.errors = 0;
-        p.passes = 0;
-      });
-      state.winners = [];
-      state.contestClosed = false;
-      state.currentSelector = null;
-      state.currentTarget = null;
-      state.activeQuestion = null;
-      state.usedQuestionIds = [];
-      state.answerRevealed = false;
-      state.timerRunning = false;
-      state.timeLeft = state.settings.timerSec;
-      timerEndPerf = null;
-      timerRemainingAtPause = null;
-      qfsDismissedKey = null;
-      state.logs = [];
-      addLog("تم تحديث البرنامج وبدء مسابقة جديدة.");
-      saveState("تحديث البرنامج وبدء مسابقة جديدة");
-      renderAll();
-      try { toast("تم تحديث البرنامج وبدء مسابقة جديدة مع إبقاء وضع المدير مفعلاً."); } catch (e) {}
-    }
-    let resetArmed = false;
-    function resetContest() {
-      if (!isAdmin) return;
-      const btn = document.getElementById("resetBtn");
-      if (!resetArmed) {
-        resetArmed = true;
-        if (btn) btn.textContent = "⚠️ اضغط مرة أخرى للتأكيد";
-        setTimeout(() => { resetArmed = false; if (btn) btn.textContent = "♻️ تصفير"; }, 4000);
-        return;
-      }
-      resetArmed = false;
-      if (btn) btn.textContent = "♻️ تصفير";
-      pushHistory();
-      stopTimer();
-      state.players.forEach(p => { p.name = ""; p.status = "available"; p.kills = 0; p.errors = 0; p.passes = 0; });
-      state.winners = [];
-      state.contestClosed = false;
-      state.currentSelector = null;
-      state.currentTarget = null;
-      state.activeQuestion = null;
-      state.usedQuestionIds = [];
-      state.answerRevealed = false;
-      state.timerRunning = false;
-      state.timeLeft = state.settings.timerSec;
-      timerEndPerf = null;
-      timerRemainingAtPause = null;
-      qfsDismissedKey = null;
-      state.logs = [];
-      addLog("تم تصفير الاختيارات والمتسابقين وبدء مسابقة جديدة.");
-      saveState("تصفير المسابقة");
-      renderAll();
-    }
-
     // ===== ملاءمة تلقائية للشاشة =====
     const FIT_W = 1280;
     let fitOn = (function () {
       try { const v = localStorage.getItem("contest_fit"); if (v !== null) return v === "1"; } catch (e) {}
-      return true;
+      return window.innerWidth >= 900;
     })();
     function fitScreen() {
       const root = document.getElementById("fitRoot");
       const btn = document.getElementById("fitBtn");
-      const de = document.documentElement;
-      de.classList.toggle("fit", fitOn);
+      document.documentElement.classList.toggle("fit", fitOn);
       if (btn) btn.textContent = fitOn ? "⤢ ملاءمة الشاشة: تلقائي" : "⤡ ملاءمة الشاشة: معطّل";
       if (!root) return;
-      de.classList.remove("fit-scroll");
-      if (!fitOn) {
-        root.classList.remove("single");
-        root.style.width = ""; root.style.transform = ""; root.style.top = "";
-        document.body.style.height = "";
-        return;
-      }
+      if (!fitOn) { root.style.width = ""; root.style.transform = ""; root.style.top = ""; return; }
+      root.style.width = FIT_W + "px";
+      root.style.transform = "none";
+      const h = root.offsetHeight;
       const vw = window.innerWidth - 16;
       const vh = window.innerHeight - 16;
-      let best = null;
-      [FIT_W, 600].forEach(W => {
-        root.classList.toggle("single", W < 900);
-        root.style.width = W + "px";
-        root.style.transform = "none";
-        const h = root.offsetHeight;
-        const sc = Math.min(vw / W, vh / h);
-        if (!best || sc > best.sc) best = { W, h, sc };
-      });
-      root.classList.toggle("single", best.W < 900);
-      root.style.width = best.W + "px";
-      const sc = Math.max(0.12, best.sc);
+      const sc = Math.max(0.2, Math.min(vw / FIT_W, vh / h));
       root.style.transform = `translateX(-50%) scale(${sc})`;
-      root.style.top = Math.max(0, (window.innerHeight - best.h * sc) / 2) + "px";
-      document.body.style.height = "";
+      root.style.top = Math.max(0, (window.innerHeight - h * sc) / 2) + "px";
     }
     function toggleFit() {
       fitOn = !fitOn;
@@ -2391,7 +2345,7 @@
     }
     fitScreen();
 
-    // ===== مزامنة حية عبر الرابط الأساسي وصلاحيات المدير =====
+    // ===== الاستضافة على claude.ai: مزامنة حية وصلاحيات =====
     const hosted = { on: false, db: null, canEdit: false, sav: 0, pend: 0, first: true };
     function toast(msg) {
       let t = document.getElementById("toastBox");
@@ -2407,7 +2361,7 @@
       t._h = setTimeout(() => { t.style.display = "none"; }, 3500);
     }
     function pushRemote() {
-      if (!hosted.db || (!isAdmin && !state.settings.allowPublicRegistration)) return;
+      if (!hosted.db || !hosted.canEdit || !isAdmin) return;
       if (hosted.sav) { hosted.pend = 1; return; }
       hosted.sav = 1;
       const copy = JSON.parse(JSON.stringify(state));
@@ -2421,7 +2375,7 @@
       hosted.on = true;
       window.alert = (m) => toast(String(m));
       window.confirm = (m) => { toast(String(m).slice(0, 140)); return true; };
-      ["sheetsUrlInput"].forEach(id => {
+      ["sheetsUrlInput", "orderedScreensList"].forEach(id => {
         const e = document.getElementById(id);
         const pnl = e && e.closest(".panel");
         if (pnl) pnl.style.display = "none";
@@ -2444,11 +2398,6 @@
       d.doc("contest/state").onSnapshot((sn) => {
         let r = null;
         try { if (sn.exists) r = JSON.parse(sn.data().s); } catch (e) {}
-        const remoteRevision = Number(r && r.revision);
-        if (r && Number.isFinite(remoteRevision) && remoteRevision < Number(state.revision || 0)) {
-          hosted.first = false;
-          return;
-        }
         if (r && (!isAdmin || hosted.first)) {
           r.settings = r.settings || {};
           r.settings.adminPassHash = state.settings.adminPassHash;
